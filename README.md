@@ -200,8 +200,9 @@ in fact this library started off as wrapper around it.
 Unfortunately, I quickly realised that the `BinaryCodec` class (i.e. base2) treats the entire array in 
 Little-Endian byte order, even though the bits within each byte are read in Big-Endian bit order. 
 I find that this mixed-endian approach contradicts how humans read strings, and how most network protocols 
-handle binary data. Considering that base16 & base64 are already covered in modern JDKs, its base58 impl is not great (~4x slower),
-and the fact that its `Base32` class is only marginally faster than my implementation, I decided against using it.
+handle binary data. Considering that base16 & base64 are already covered in modern JDKs, its `Base58` class is not great 
+(~4x slower), and the fact that its `Base32` class is only marginally faster than my implementation, 
+I decided against using it.
 
 ### buddy-core 
 
