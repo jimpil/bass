@@ -17,17 +17,19 @@
   (Class/forName "org.apache.commons.codec.binary.Base58")
   (println "Detected `commons-codec` on the classpath - delegating to its optimised Base58 impl...")
 
-  (def BASE58 (org.apache.commons.codec.binary.Base58.))
+  (eval
+    `(def ~(with-meta 'BASE58 {:tag 'org.apache.commons.codec.binary.Base58})
+       (~'org.apache.commons.codec.binary.Base58.)))
 
-  (defn encode
-    ^String [bs]
-    (.encodeToString
-      ^org.apache.commons.codec.binary.Base58 BASE58
-      (util/buffer->bytes bs)))
+  (eval
+    `(defn ~(with-meta 'encode {:tag 'java.lang.String})
+       [~'bs]
+       (.encodeToString ~'BASE58 (util/buffer->bytes ~'bs))))
 
-  (defn decode
-    ^bytes [^String s]
-    (.decode ^org.apache.commons.codec.binary.Base58 BASE58 s))
+  (eval
+    `(defn ~(with-meta 'decode {:tag 'byte/1})
+       [~(with-meta 's {:tag 'java.lang.String})]
+       (.decode ~'BASE58 ~'s)))
 
   (catch ClassNotFoundException _
 

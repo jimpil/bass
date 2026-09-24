@@ -34,6 +34,6 @@ jobs:
     - name: install-deps
       run: lein deps
     - name: run-tests
-      run: lein test
+      run: lein with-profile -dev test
     - name: cleanup
       run: lein clean
