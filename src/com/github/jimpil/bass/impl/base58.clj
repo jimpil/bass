@@ -2,7 +2,8 @@
   (:require
     [com.github.jimpil.bass.impl.alphabet :as ab]
     [com.github.jimpil.bass.util :as util])
-  (:import [java.nio ByteBuffer]))
+  (:import
+    [java.nio ByteBuffer]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
