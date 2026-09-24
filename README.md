@@ -20,6 +20,10 @@ with emphasis on correctness, ergonomics, and to some extent, performance:
 - Base58 (per Bitcoin alphabet): implemented using `java.lang.BigInteger`, or passthrough to `org.apache.commons.codec.binary.Base58` if found on the classpath
 - Bse64: passthrough to `java.util.Base64`
 
+## Where 
+
+[![Clojars Project](https://clojars.org/jimpil/bass/latest-version.svg)](https://clojars.org/jimpil/bass)
+
 ## Why 
 
 ### Base2 & Base8
