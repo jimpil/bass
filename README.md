@@ -35,14 +35,8 @@ See the performance section, for more on how they perform.
 
 ### Base58
 Facilities for base58 simply don't exist in the JDK. The implementation provided here is significantly faster than  
-anything I could find online (in Clojure), and yet, it is the slowest base within this library.
+anything I could find online (including `commons-codec`), and yet, it is the slowest base within this library.
 See the performance section, for more on how it performs.
-
-#### Note 
-
-If `commons-codec` is already on your classpath, you need not to worry about this base being slow - 
-`org.apache.commons.codec.binary.Base58` will be used, and its performance is on par with Java's native conversions 
-(e.g. `HexFormat`). See `base58.clj` for how this done.
 
 ### Why not x?
 
@@ -154,13 +148,6 @@ This basically means that you need to ensure that your `defmethod` is evaluated 
 `with-base` usages are macro-expanded! The safest way to do that is to put it in a namespace,
 which is then required by the namespace(s) that use `with-base`.
 
-#### Attention! 
-
-The above is just an example. Before you go ahead and replace the (admittedly slow) base58 impl with the ones 
-from `commons-codec`, remember that, if `commons-codec` is detected on the classpath, this is done  
-automatically (i.e. the encode/decode functions in `base58.clj` will delegate to the highly optimised 
-`org.apache.commons.codec.binary.Base58` class).
-
 ## Performance
 
 The measurements below were taken with `criterium` on a 2016 Macbook Pro (Intel i7 - 2.8 GHz), 
@@ -186,7 +173,6 @@ Just for laughs, here are the native Java numbers:
 | Base       | Input | Duration |
 |:-----------|:-----:|---------:|
 | 16         | array |     2 µs |
-| 58-commons | array |     2 µs |
 | 64         | array |   737 ns |
 
 ### Decode 1KB (i.e. String -> 1024 bytes)
@@ -203,7 +189,7 @@ Just for laughs, here are the native Java numbers:
 
 All encoders/decoders need _well under_ 20/60 micro-seconds respectively, to process 
 1KB of data (on this ancient laptop). My base58 implementation is the outlier which is more expensive.
-The one from `commons-codec` is _much_ faster.
+Surprisingly enough, the base58 implementation from `commons-codec` is somehow slower.
 
 ## Alternatives
 
@@ -214,10 +200,8 @@ in fact this library started off as wrapper around it.
 Unfortunately, I quickly realised that the `BinaryCodec` class (i.e. base2) treats the entire array in 
 Little-Endian byte order, even though the bits within each byte are read in Big-Endian bit order. 
 I find that this mixed-endian approach contradicts how humans read strings, and how most network protocols 
-handle binary data. Considering that base16 & base64 are already covered in modern JDKs, and the fact that its `Base32` 
-class is only marginally faster than my implementation, the only class that I would realistically end up using would 
-be the `Base58` one. In fact, as mentioned multiple times by now, this class is indeed being used, if present 
-on the classpath.
+handle binary data. Considering that base16 & base64 are already covered in modern JDKs, its base58 impl is not great (~4x slower),
+and the fact that its `Base32` class is only marginally faster than my implementation, I decided against using it.
 
 ### buddy-core 
 
@@ -234,7 +218,7 @@ For example:
 
 - base2 encoding/decoding is ~35x/5x slower respectively
 - base8 encoding/decoding is ~630x/24x slower respectively
-- base58 encoding/decoding is ~10x/6x slower respectively (compared to my 'slow' impl)
+- base58 encoding/decoding is ~10x/6x slower respectively 
 
 On the other hand, its base32 encoding/decoding is ~3x/7x faster respectively, and is of course, written in Java.
 Finally, its base16 implementation (also pure Java) is essentially comparable to `java.util.HexFormat` (marginally slower).
