@@ -22,7 +22,7 @@ with emphasis on correctness, ergonomics, and to some extent, performance:
 
 ## Where 
 
-[![Clojars Project](https://clojars.org/jimpil/bass/latest-version.svg)](https://clojars.org/jimpil/bass)
+[![Clojars Project](https://clojars.org/com.github.jimpil/bass/latest-version.svg)](https://clojars.org/com.github.jimpil/bass)
 
 ## Why 
 
