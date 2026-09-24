@@ -44,7 +44,7 @@ If `commons-codec` is already on your classpath, you need not to worry about thi
 
 See `Alternatives` section at the end.
 
-### But why macro-based?
+### Why macro-based?
 The most widely used bases for real (production) systems, are of course, base16 & base64, and as mentioned earlier, 
 the native JDK classes for those offer _hilarious_ performance (see performance section for more). Putting these calls
 behind an abstraction, puts you in a situation where the dispatch logic may match, or even outweigh the actual conversion! 
@@ -62,7 +62,7 @@ turns out to be quite the convenience (from an api consumer perspective).
 
 If it's not obvious by now, the following is the entire API.
 
-### com.github.jimpil.bass.core/with-base [base op & body]
+### `com.github.jimpil.bass.core/with-base` [base op & body]
  
 You must provide the base identifier & the operation to perform (`:encode` VS `:decode`) as literals,
 followed by some body of code. The following identifiers are recognised:

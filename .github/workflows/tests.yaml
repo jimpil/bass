@@ -1,0 +1,39 @@
+name: Bass CI
+
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-java@v3
+      with:
+        distribution: 'adopt-hotspot'
+        java-version: '25'
+
+    - name: Install clojure tools
+      uses: DeLaGuardo/setup-clojure@13.2
+      with:
+        lein: 2.10.0
+
+    - name: Cache Deps
+      id: cache-deps
+      uses: actions/cache@v3
+      env:
+        cache-name: cache-deps
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('project.clj') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+
+    - name: install-deps
+      run: lein deps
+    - name: run-tests
+      run: lein test
+    - name: cleanup
+      run: lein clean
