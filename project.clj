@@ -1,4 +1,4 @@
-(defproject com.github.jimpil/bass "0.1.2"
+(defproject com.github.jimpil/bass "0.1.3-SNAPSHOT"
   :description "Clojure facilities for encoding/decoding to/from various numerical bases"
   :url "https://github.com/jimpil/bass"
   :license {:name "EPL-2.0 OR GPL-2.0-or-later WITH Classpath-exception-2.0"
