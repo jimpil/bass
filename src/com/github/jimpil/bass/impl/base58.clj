@@ -24,7 +24,7 @@
         sb (StringBuilder. (unchecked-add n zeroes))
         c1 (char \1)]
     (dotimes [_ zeroes] (.append sb c1))
-    (run! (fn [^Character c] (.append sb c)) characters)
+    (doseq [^char c characters] (.append sb c))
     (str sb)))
 
 (defn decode
@@ -53,6 +53,6 @@
             ret (byte-array length)]
         (System/arraycopy
           byte-arr (if signed? 1 0)
-          ret nzeroes
+          ret      nzeroes
           (unchecked-subtract length nzeroes))
         ret))))

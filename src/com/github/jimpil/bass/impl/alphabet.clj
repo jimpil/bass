@@ -16,7 +16,6 @@
    (let [base-len (count alphabet)
          len (count characters)
          bi-base  (BigInteger/valueOf base-len)
-
          ;; 1. Safely calculate exactly how many base-N digits fit into a signed long
          ;; Max long is ~9.22e18. For Base58, log2(58) ≈ 5.85. 62 / 5.85 = 10 digits safe.
          log2-base (/ (Math/log (double base-len))
@@ -28,7 +27,8 @@
          indices  (mapv
                     (fn [token]
                       (or (index-of token)
-                          (throw (ex-info "Invalid token" {}))))
+                          (throw
+                            (ex-info "Invalid token!" {:token token :alphabet alphabet}))))
                     characters)]
      ;; 4. Tight loop processing data in fast primitive chunks
      (let [^BigInteger ret
@@ -39,14 +39,15 @@
                      chunk-sz (if (< remainder safe-chunk-size)
                                 remainder
                                 safe-chunk-size)
-                     end  (+ i chunk-sz)
+                     end  (unchecked-add-int i chunk-sz)
                      ;; Inner loop: accumulates up to 10+ digits
                      chunk-val (loop [idx i
                                       local-acc 0]
                                  (if (< idx end)
                                    (recur (unchecked-inc-int idx)
-                                          (+ (* local-acc base-len)
-                                             ^long (nth indices idx)))
+                                          (unchecked-add
+                                            ^long (nth indices idx)
+                                            (unchecked-multiply local-acc base-len)))
                                    local-acc))]
                  (recur end
                         (-> acc
@@ -97,27 +98,3 @@
                                      (conj! t-acc (.charAt alphabet (rem rem-long base))))
                               t-acc))]
           (recur quotient next-tokens))))))
-
-
-#_(defn divide
-  "Calculates a sequence of tokens (from alphabet) for a byte array."
-  [^String alphabet ^bytes bs]
-  (let [base     (count alphabet)
-        base-big (BigInteger/valueOf base)]
-    (loop [n (BigInteger. 1 bs)
-           tokens (transient [])]
-      (if (neg? (.compareTo n base-big))
-        (let [ret (-> tokens
-                      (conj! (.charAt alphabet (.intValue n)))
-                      persistent!)]
-          [(rseq ret)
-           (count ret)]) ;; constant-time op
-        ;; .divideAndRemainder computes both quotient and modulus in a single pass
-        (let [^BigInteger/1 drs (.divideAndRemainder n base-big)
-              ^BigInteger quotient   (aget drs 0)
-              ^BigInteger remainder  (aget drs 1)]
-          (recur
-            quotient
-            (conj! tokens (.charAt alphabet (.intValue remainder)))))))))
-
-
