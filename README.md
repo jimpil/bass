@@ -10,7 +10,7 @@
 
 ## What
 
-A tiny (1 macro) Clojure library for encoding/decoding data to/from various numerical bases, 
+A tiny (23Kb) Clojure library for encoding/decoding data to/from various numerical bases, 
 with emphasis on correctness, ergonomics, and to some extent, performance. Supports:
 
 - Base2  (aka binary): implemented using `java.lang.Integer`  
