@@ -11,14 +11,14 @@
 ## What
 
 A tiny (1 macro) Clojure library for encoding/decoding data to/from various numerical bases, 
-with emphasis on correctness, ergonomics, and to some extent, performance:
+with emphasis on correctness, ergonomics, and to some extent, performance. Supports:
 
 - Base2  (aka binary): implemented using `java.lang.Integer`  
 - Base8  (aka octal): implemented using `java.lang.Integer`
 - Base16 (aka hex): passthrough to `java.util.HexFormat`  
 - Base32 (standard): implemented from scratch
-- Base58 (per Bitcoin alphabet): implemented using `java.lang.BigInteger`, or passthrough to `org.apache.commons.codec.binary.Base58` if found on the classpath
-- Bse64: passthrough to `java.util.Base64`
+- Base58 (per Bitcoin alphabet): implemented using `java.lang.BigInteger`
+- Base64: passthrough to `java.util.Base64`
 
 ## Where 
 
@@ -27,10 +27,10 @@ with emphasis on correctness, ergonomics, and to some extent, performance:
 ## Why 
 
 ### Base2 & Base8
-When dealing with base16 or base64, the JDK has you covered - it provides facilities for extremely fast (and correct)
-data conversions. However, the facilities it offers for base2 & base8 are _number_ focused, rather than _data_ focused.
+When dealing with base16 or base64, the JDK has you covered - it provides extremely fast (and correct) facilities for data 
+encoding/decoding. However, the facilities it offers for base2 & base8 are _number_ focused, rather than _data_ focused.
 This has several implications - for example, leading zeroes don't matter when talking about a number, but they do matter
-when dealing with a byte-array. This library takes care to **not** ignore leading zeroes from base2 & base8. 
+when dealing with raw bytes. This library takes care to **not** ignore leading zeroes from base2 & base8. 
 See the performance section, for more on how they perform.
 
 ### Base58
@@ -43,9 +43,10 @@ See the performance section, for more on how it performs.
 See `Alternatives` section at the end.
 
 ### Why macro-based?
+
 The most widely used bases for real (production) systems, are of course, base16 & base64, and as mentioned earlier, 
 the native JDK classes for those offer _hilarious_ performance (see performance section for more). Putting these calls
-behind an abstraction, puts you in a situation where the dispatch logic may match, or even outweigh the actual conversion! 
+behind an abstraction, puts you in a situation where the dispatch logic may match, or even outweigh the actual processing! 
 If that sounds downright impossible/unbelievable, please do check the performance section! 
 The `with-base` macro expands to a single function call (i.e. the _bottom_ encoder/decoder), and therefore incurs no cost.
  
@@ -63,7 +64,7 @@ If it's not obvious by now, the following is the entire API.
 ### `com.github.jimpil.bass.core/with-base` [base op & body]
  
 You must provide the base identifier & the operation to perform (`:encode` VS `:decode`) as literals,
-followed by some body of code. The following identifiers are recognised:
+followed by a body of code. The following identifiers are recognised:
 
 - `:base2` or `"2"` or `2`
 - `:base8` or `"8"` or `8`
@@ -96,25 +97,27 @@ Example:
 
 ### Nuisance
 
-In order to avoid copying, the return type of decoders is not always consistent. 
-They _may_ choose to return ByteBuffer instead of byte-array, which means that
+In order to avoid copying, the return type of decoders is _not_ always consistent. 
+They _may_ choose to return `java.nio.ByteBuffer` instead of byte-array, which means that
 encoders _must_ be able to deal with either (otherwise round-tripping breaks).
+
+In practise, the only decoder that _may_ return a ByteBuffer, is the Base58 one. 
 
 #### Input
 
 Decoders always expect a String, whereas encoders can consume byte-array or `java.nio.ByteBuffer`.
 Strings must be **well** (must adhere to alphabet) & **fully** formed - e.g. binary/octal String length must 
 be a multiple of 8/3 respectively. Pad left or right, according to your needs, but do remember that this library 
-assumes Big-Endian (i.e. MSB to the left).
+assumes **Big-Endian** (i.e. MSB to the left).
 
 #### Output
 
 Encoders always return String, and decoders typically return `byte-array`. 
-The implementation of base58 in this library (not `commons-codec`) _may_ return `java.nio.ByteBuffer`. 
+As already mentioned, the implementation of base58 in this library _may_ return `java.nio.ByteBuffer`. 
 This is in an attempt to avoid copying, and although certainly a compromise, I would argue that it's a small one, 
 because any downstream code that is able to consume a byte-array, can trivially be ported/adapted to consume a 
 ByteBuffer instead (i.e. both loops look fairly similar). If you'd rather have consistency over performance, 
-the simplest thing you can do is to define your own wrapper. For example, let's say that you want an base58 decoder 
+the simplest thing you can do is to define your own wrapper. For example, let's say that you want a Base58 decoder 
 which _always_ returns byte-array:  
 
 ```clj
@@ -125,9 +128,6 @@ which _always_ returns byte-array:
   ^bytes [x]
   (buffer->bytes (with-base 58 :decode x)))
 ```
-As always, before doing this, think about whether you actually need it. Will you be using base58? 
-If yes, is `commons-codec` already on your classpath? If yes, then there is effectively no decoder 
-that will return `ByteBuffer`. 
 
 The other thing you can do is to assume byte-array, and look for reflection warnings. 
 Because `with-base` compiles down to a single function call, if you're hitting a decoder with a non type-hinted return, 
@@ -137,7 +137,7 @@ your downstream code is bound to be reflective.
 ### Custom bases 
 
 There is no path for extending this library with new bases, but there is a path
-for replacing the existing encoder/decoder implementation(s) that `with-base` will use.
+for replacing the existing encoder/decoder implementation(s) that the `with-base` macro will use.
 This may be useful in situations where perhaps, you are not happy with a particular 
 encoder/decoder pair (e.g. base58 is too slow for your liking), and you want to 
 provide your own implementations. You do this via the `com.github.jimpil.bass.impl/roundtrip`
@@ -151,7 +151,7 @@ which is then required by the namespace(s) that use `with-base`.
 ## Performance
 
 The measurements below were taken with `criterium` on a 2016 Macbook Pro (Intel i7 - 2.8 GHz), 
-against Java 25 & Clojure 1.12.3. The expressions used to produce them can be found at the bottom of the
+against Java 25 & Clojure 1.12.5. The expressions used to produce them can be found at the bottom of the
 `core.clj` (the comment section). As you can see, the native Java methods (base16 & base64) are just ridiculous 
 in terms of performance.
 
@@ -189,20 +189,18 @@ Just for laughs, here are the native Java numbers:
 
 All encoders/decoders need _well under_ 20/60 micro-seconds respectively, to process 
 1KB of data (on this ancient laptop). My base58 implementation is the outlier which is more expensive.
-Surprisingly enough, the base58 implementation from `commons-codec` is somehow slower.
+Surprisingly enough, the Base58 implementation from `commons-codec` is somehow slower.
 
 ## Alternatives
 
 ### commons-codec 
 
-Apache [commons-codec](https://github.com/apache/commons-codec) is the obvious one - 
-in fact this library started off as wrapper around it.
+Apache [commons-codec](https://github.com/apache/commons-codec) is the obvious one - in fact this library started off as wrapper around it.
 Unfortunately, I quickly realised that the `BinaryCodec` class (i.e. base2) treats the entire array in 
 Little-Endian byte order, even though the bits within each byte are read in Big-Endian bit order. 
 I find that this mixed-endian approach contradicts how humans read strings, and how most network protocols 
 handle binary data. Considering that base16 & base64 are already covered in modern JDKs, its `Base58` class is not great 
-(~4x slower), and the fact that its `Base32` class is only marginally faster than my implementation, 
-I decided against using it.
+(~4x slower), and the fact that its `Base32` class is only marginally faster than my implementation, I decided against using it.
 
 ### buddy-core 
 
@@ -212,7 +210,7 @@ so everything mentioned above applies, not to mention, its scope and purpose are
 protocol-dispatch (e.g. `buddy.core.codecs/IByteArray`), something which I am trying to avoid.  
 
 ### alphabase 
-I discovered [mvxcvi/alphabase](https://github.com/greglook/alphabase) recently, and I have to say, there are many things I like about it. 
+I discovered [mvxcvi/alphabase](https://github.com/greglook/alphabase) recently, and I have to say, there are several things I like about it. 
 For starters, it is very similar in scope & spirit, it doesn't introduce any abstractions,
 and it works on both clj & cljs! Unfortunately, some of the implementations it provides are _really_ slow. 
 For example:
