@@ -5,10 +5,10 @@
             :url "https://www.eclipse.org/legal/epl-2.0/"}
   :dependencies [[org.clojure/clojure "1.12.5"]]
   :repl-options {:init-ns com.github.jimpil.bass.core}
-  :profiles {:dev {:dependencies [[commons-codec "1.22.0"]
-                                  [mvxcvi/alphabase "3.0.185"]
-                                  [criterium "0.4.6"]]}
-             :test {:dependencies [[org.clojure/test.check "1.1.3"]]}}
+  :profiles {:dev {:dependencies [[criterium "0.4.6"]
+                                  [mvxcvi/alphabase "3.0.185"]]}
+             :test {:dependencies [[org.clojure/test.check "1.1.3"]
+                                   [commons-codec "1.22.0"]]}}
 
   :release-tasks [["vcs" "assert-committed"]
                   ["change" "version" "leiningen.release/bump-version" "release"]

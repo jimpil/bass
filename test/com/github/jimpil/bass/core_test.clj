@@ -5,9 +5,11 @@
             [clojure.test.check.generators :as gen]
             [clojure.test.check.properties :as prop]
             [com.github.jimpil.bass.core :refer [with-base]]
+            [com.github.jimpil.bass.impl.base58 :as base58]
             [com.github.jimpil.bass.util :as util])
   (:import [java.nio ByteBuffer]
-           [java.util Arrays]))
+           [java.util Arrays]
+           [org.apache.commons.codec.binary Base58]))
 
 (set! *warn-on-reflection* true)
 
@@ -152,6 +154,24 @@
         (= b58-str (with-base 58 :encode b58-bytes)))))
   )
 
+(defspec base58-encoding-matches-commons-codec 5000
+  (let [B58 (Base58.)]
+    (prop/for-all [bs gen/bytes]
+      (is (= (.encodeToString B58 bs)
+             (with-base 58 :encode bs))))))
+
+(defspec base58-decoding-matches-commons-codec 5000
+  (let [B58 (Base58.)
+        ab-set (set base58/alphabet)]
+    (prop/for-all [s (gen/fmap
+                       (fn [s]
+                         (->> s
+                              (filter ab-set)
+                              (apply str)))
+                       gen/string)]
+      (is (= (seq (.decode B58 s))
+             (seq (util/buffer->bytes (with-base 58 :decode s))))))))
+
 
 (defspec array-roundtrip-is-lossless 2000
   (prop/for-all [bs gen/bytes]
@@ -168,10 +188,11 @@
         (= (seq bs)
            (seq (util/buffer->bytes roundtripped)))))))
 
-(defspec buffer-roundtrip-is-lossless 1000
+(defspec buffer-roundtrip-is-lossless 2000
   (prop/for-all [^ByteBuffer buf (gen/fmap
-                                   #(doto (ByteBuffer/wrap %)
-                                      .mark) ;; we will consume this twice!
+                                   (fn [^bytes bs]
+                                      (doto (ByteBuffer/wrap bs)
+                                      .mark)) ;; we will consume this twice!
                                    gen/bytes)]
     (let [roundtripped (->> buf
                             (with-base 2 :encode)
