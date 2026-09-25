@@ -101,7 +101,7 @@ In order to avoid copying, the return type of decoders is _not_ always consisten
 They _may_ choose to return `java.nio.ByteBuffer` instead of byte-array, which means that
 encoders _must_ be able to deal with either (otherwise round-tripping breaks).
 
-In practise, the only decoder that _may_ return a ByteBuffer, is the Base58 one. 
+In practise, the only decoder that _may_ return a ByteBuffer, is the Base58 one (see `Output` section below). 
 
 #### Input
 
@@ -136,12 +136,11 @@ your downstream code is bound to be reflective.
 
 ### Custom bases 
 
-There is no path for extending this library with new bases, but there is a path
+There is no path for extending this library with new bases (at runtime), but there is a path
 for replacing the existing encoder/decoder implementation(s) that the `with-base` macro will use.
 This may be useful in situations where perhaps, you are not happy with a particular 
 encoder/decoder pair (e.g. base58 is too slow for your liking), and you want to 
-provide your own implementations. You do this via the `com.github.jimpil.bass.impl/roundtrip`
-multi-method. 
+provide your own implementations. You do this via the `com.github.jimpil.bass.impl.finder/encoder-decoder` multi-method. 
 
 The caveat here is that the implementations are looked up at compile-time.
 This basically means that you need to ensure that your `defmethod` is evaluated before 
@@ -189,7 +188,7 @@ Just for laughs, here are the native Java numbers:
 
 All encoders/decoders need _well under_ 20/60 micro-seconds respectively, to process 
 1KB of data (on this ancient laptop). My base58 implementation is the outlier which is more expensive.
-Surprisingly enough, the Base58 implementation from `commons-codec` is somehow slower.
+Surprisingly enough, the `Base58` class from `commons-codec`, is somehow slower (more on this on the next section).
 
 ## Alternatives
 
