@@ -1,6 +1,7 @@
 (ns com.github.jimpil.bass.impl.base32
   (:require
-    [com.github.jimpil.bass.impl.alphabet :as ab])
+    [com.github.jimpil.bass.impl.alphabet :as ab]
+    [com.github.jimpil.bass.util :as util])
   (:import
     [java.nio ByteBuffer]))
 
@@ -60,46 +61,67 @@
 (defn decode
   "Decodes a Base32 string into a byte-array."
   ^bytes [^String s]
-  (let [pad-start (.indexOf s "=")
-        sanitized-len (if (pos? pad-start)
-                        pad-start
-                        (count s))
-        ;; Calculate exact expected output length from sanitized data bits
-        output-len (-> sanitized-len
-                       (unchecked-multiply 5)
-                       (quot 8))
-        ret (byte-array output-len)]
-    (loop [char-idx  (int 0)
-           byte-idx  (int 0)
-           buffer    (int 0)
-           bits-left (int 0)]
-      (if (< char-idx sanitized-len)
-        (let [c (.charAt s char-idx)
-              ^long v (index-lookup c)]
-          (if (neg? v)
-            (throw (IllegalArgumentException.
-                     (str "Invalid character in Base32 string: " c)))
-            (let [next-buffer (-> buffer
-                                  (bit-shift-left 5)
-                                  (bit-or v))
-                  next-bits (unchecked-add-int bits-left 5)]
-              (if (>= next-bits 8)
-                (let [shift (unchecked-subtract-int next-bits 8)
-                      b (-> next-buffer
-                            (bit-shift-right shift)
-                            (bit-and 0xFF))
-                      ;; Mask out the bits that were just converted to a byte
-                      ;; to keep the buffer clean and prevent potential long overflow
-                      clean-buffer (->> (bit-shift-left 1 shift)
-                                        unchecked-dec-int
-                                        (bit-and next-buffer))]
-                  (aset-byte ret byte-idx (unchecked-byte b))
+  (if (empty? s)
+    util/no-bytes
+    (let [pad-start (.indexOf s "=")
+          sanitized-len (if (pos? pad-start)
+                          pad-start
+                          (count s))
+          ;; Calculate exact expected output length from sanitized data bits
+          output-len (-> sanitized-len
+                         (unchecked-multiply 5)
+                         (quot 8))
+          ret (byte-array output-len)]
+      (loop [char-idx  (int 0)
+             byte-idx  (int 0)
+             buffer    (int 0)
+             bits-left (int 0)]
+        (if (< char-idx sanitized-len)
+          (let [c (.charAt s char-idx)
+                v (index-lookup c)]
+            (if (nil? v)
+              (throw (IllegalArgumentException.
+                       (str "Invalid character in Base32 string: " c)))
+              (let [^long v v
+                    next-buffer (-> buffer
+                                    (bit-shift-left 5)
+                                    (bit-or v))
+                    next-bits (unchecked-add-int bits-left 5)]
+                (if (>= next-bits 8)
+                  (let [shift (unchecked-subtract-int next-bits 8)
+                        b (-> next-buffer
+                              (bit-shift-right shift)
+                              (bit-and 0xFF))
+                        ;; Mask out the bits that were just converted to a byte
+                        ;; to keep the buffer clean and prevent potential long overflow
+                        clean-buffer (->> (bit-shift-left 1 shift)
+                                          unchecked-dec-int
+                                          (bit-and next-buffer))]
+                    (aset-byte ret byte-idx (unchecked-byte b))
+                    (recur (unchecked-inc-int char-idx)
+                           (unchecked-inc-int byte-idx)
+                           clean-buffer
+                           shift))
                   (recur (unchecked-inc-int char-idx)
-                         (unchecked-inc-int byte-idx)
-                         clean-buffer
-                         shift))
-                (recur (unchecked-inc-int char-idx)
-                       byte-idx
-                       next-buffer
-                       next-bits)))))
-        ret))))
+                         byte-idx
+                         next-buffer
+                         next-bits)))))
+          ret)))))
+
+(defn pad-right
+  "Base32 always operates in blocks of 40 bits (5 bytes),
+   which cleanly maps to 8 alphanumeric characters.
+   If data falls short of a 5-byte boundary, it must be padded
+   with '=' until the block length is a multiple of 8."
+  ^String [characters]
+  (let [len  (count characters)
+        padn (rem len 8)]
+    (if (or (zero? len)
+            (zero? padn))
+      (cond->> characters
+               (sequential? characters)
+               (apply str))
+      (->> \=
+           (repeat (- 8 padn))
+           (concat characters)
+           (apply str)))))
