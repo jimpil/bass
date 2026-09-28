@@ -20,17 +20,12 @@
       (is
         (= b58-str (base58/encode b58-bytes))))))
 
-(defspec base58-encoding-matches-commons-codec 5000
+(defspec commons-codec-parity 10000
   (let [B58 (Base58.)]
     (prop/for-all [bs gen/bytes]
-      (is (= (.encodeToString B58 bs)
-             (base58/encode bs))))))
-
-(defspec base58-decoding-matches-commons-codec 5000
-  (let [B58 (Base58.)]
-    (prop/for-all [s (gen/fmap
-                       (partial apply str)
-                       (gen/vector
-                         (gen/elements (vec base58/alphabet))))]
-      (is (= (seq (.decode B58 s))
-             (seq (util/buffer->bytes (base58/decode s))))))))
+      (let [encoded (base58/encode bs)
+            decoded (base58/decode encoded)]
+        (is (= (.encodeToString B58 bs)
+               encoded))
+        (is (= (seq (.decode B58 encoded))
+               (seq (util/buffer->bytes decoded))))))))

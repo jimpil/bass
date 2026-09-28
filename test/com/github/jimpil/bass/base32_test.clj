@@ -31,28 +31,12 @@
       ;; 3. Sequential Bytes
       "AAAQEAYE" (base32/encode (byte-array [0 1 2 3 4])))))
 
-(defspec base32-encoding-matches-commons-codec 5000
+(defspec commons-codec-parity 10000
   (let [B32 (Base32.)]
     (prop/for-all [bs gen/bytes]
-      (is (= (.encodeToString B32 bs)
-             (base32/encode bs))))))
-
-(defspec base32-decoding-matches-commons-codec 5000
-  (let [B32 (Base32.)]
-    (prop/for-all [s (gen/fmap
-                       (fn [vchars]
-                         (let [r (rem (count vchars) 8)]
-                           (cond
-                             (zero? r) ;; well & fully formed - do nothing
-                             (apply str vchars)
-
-                             (#{2 4 5 7 } r) ;; well-formed - just pad it
-                             (base32/pad-right vchars)
-
-                             :else ;; not fully-formed - commons-codec zero-pads to the right
-                             (base32/pad-right (conj vchars \A)))))
-                       (gen/vector
-                         (gen/elements (vec base32/alphabet))))]
-      (is (= (seq (.decode B32 s))
-             (seq (base32/decode s)))))))
-
+      (let [encoded (base32/encode bs)
+            decoded (base32/decode encoded)]
+        (is (= (.encodeToString B32 bs)
+               encoded))
+        (is (= (seq (.decode B32 encoded))
+               (seq decoded)))))))
